@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kenma Pixel Game</title>
+  <style>
+    canvas {
+      display: block;
+      margin: auto;
+      border: 2px solid black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="640" height="360"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // 🖼️ Background image
+    const background = new Image();
+    background.src = "School.png"; // Your background
+
+    // 🖼️ Kenma walking frames
+    const kenmaFrames = [
+      "kenma1.png",
+      "kenma2.png",
+      "kenma3.png",
+      "kenma4.png"
+    ].map(src => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    });
+
+    // 🎵 Jump sound
+    const jumpSound = new Audio("jump.mp3");
+
+    const mario = {
+      x: 200, // fixed x position on screen (Kenma stays around here)
+      y: 280,
+      width: 40,
+      height: 50,
+      dy: 0,
+      jumpPower: -10,
+      gravity: 0.5,
+      grounded: false,
+      frameIndex: 0,
+      frameTimer: 0,
+      frameSpeed: 10,
+      worldX: 0 // actual movement through the world
+    };
+
+    const keys = {
+      ArrowLeft: false,
+      ArrowRight: false,
+      Space: false
+    };
+
+    const groundY = 310;
+
+    document.addEventListener("keydown", e => {
+      if (e.code in keys) keys[e.code] = true;
+    });
+
+    document.addEventListener("keyup", e => {
+      if (e.code in keys) keys[e.code] = false;
+    });
+
+    function update() {
+      if (keys.ArrowLeft) mario.worldX -= 4;
+      if (keys.ArrowRight) mario.worldX += 4;
+
+      // Animate walking
+      if (keys.ArrowLeft || keys.ArrowRight) {
+        mario.frameTimer++;
+        if (mario.frameTimer >= mario.frameSpeed) {
+          mario.frameTimer = 0;
+          mario.frameIndex = (mario.frameIndex + 1) % kenmaFrames.length;
+        }
+      } else {
+        mario.frameIndex = 0;
+      }
+
+      // Jumping
+      if (keys.Space && mario.grounded) {
+        mario.dy = mario.jumpPower;
+        mario.grounded = false;
+        jumpSound.currentTime = 0;
+        jumpSound.play();
+      }
+
+      mario.dy += mario.gravity;
+      mario.y += mario.dy;
+
+      if (mario.y + mario.height > groundY) {
+        mario.y = groundY - mario.height;
+        mario.dy = 0;
+        mario.grounded = true;
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Scroll background
+      const scrollX = mario.worldX % background.width;
+      ctx.drawImage(background, -scrollX, 0, background.width, canvas.height);
+      ctx.drawImage(background, background.width - scrollX, 0, background.width, canvas.height);
+
+      // Draw Kenma frame
+      const frame = kenmaFrames[mario.frameIndex];
+      ctx.drawImage(frame, mario.x, mario.y, mario.width, mario.height);
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    background.onload = () => {
+      kenmaFrames[0].onload = () => {
+        gameLoop();
+      };
+    };
+  </script>
+</body>
+</html>
